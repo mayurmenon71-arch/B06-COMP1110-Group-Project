@@ -1,0 +1,9 @@
+First stage preview:
+I’ve finished setting up the core architecture of our simulation system.
+Models for CustomerGroup, Table, and Restaurant are implemented.
+I also built the input parser so users can configure restaurant layouts and operating time.
+A scenario generator is ready that creates realistic customer arrivals based on restaurant demand type (fast/normal/slow × high/low demand).
+
+Next step is implementing the simulation engine (time progression + seating logic), strategy comparison functions, and performance evaluation metrics (waiting time, utilization, fairness, throughput).
+
+Suggest we split tasks into engine / strategies / metrics / scenario refinement.
