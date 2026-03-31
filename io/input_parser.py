@@ -8,12 +8,7 @@ from models.table import Table
 
 
 def time_to_minutes(time_str: str) -> int:
-    """
-    Convert HH:MM string to total minutes from 00:00.
-
-    Example:
-        "11:30" -> 690
-    """
+    """Convert HH:MM string to total minutes from 00:00."""
     try:
         hour_str, minute_str = time_str.strip().split(":")
         hours = int(hour_str)
@@ -28,9 +23,7 @@ def time_to_minutes(time_str: str) -> int:
 
 
 def minutes_to_time(total_minutes: int) -> str:
-    """
-    Convert total minutes from 00:00 back to HH:MM format.
-    """
+    """Convert total minutes from 00:00 back to HH:MM format."""
     if total_minutes < 0:
         raise ValueError("Total minutes cannot be negative.")
 
@@ -44,9 +37,7 @@ def build_tables_from_counts(
     num_4_seat: int,
     num_6_seat: int
 ) -> List[Table]:
-    """
-    Build a list of Table objects from user-input table counts.
-    """
+    """Build a list of Table objects from user-input table counts."""
     if num_2_seat < 0 or num_4_seat < 0 or num_6_seat < 0:
         raise ValueError("Number of tables cannot be negative.")
 
@@ -72,9 +63,7 @@ def build_tables_from_counts(
 
 
 def build_restaurant_from_user_input() -> Restaurant:
-    """
-    Interactively build a Restaurant object from user input.
-    """
+    """Interactively build a Restaurant object from user input."""
     name = input("Enter restaurant name: ").strip()
 
     open_time_str = input("Enter opening time (HH:MM): ").strip()
@@ -96,11 +85,12 @@ def build_restaurant_from_user_input() -> Restaurant:
         num_6_seat=num_6_seat
     )
 
-    restaurant = Restaurant(name=name, tables=tables)
-    restaurant.opening_time = opening_time
-    restaurant.closing_time = closing_time
-
-    return restaurant
+    return Restaurant(
+        name=name,
+        opening_time=opening_time,
+        closing_time=closing_time,
+        tables=tables
+    )
 
 
 def parse_arrivals(filepath: str) -> List[CustomerGroup]:
@@ -109,11 +99,6 @@ def parse_arrivals(filepath: str) -> List[CustomerGroup]:
 
     Expected format:
         group_id size arrival_time dining_duration
-
-    Example:
-        1 2 11:30 45
-        2 4 11:45 60
-        3 3 12:10 40
     """
     groups: List[CustomerGroup] = []
 
@@ -121,7 +106,7 @@ def parse_arrivals(filepath: str) -> List[CustomerGroup]:
         for line_number, raw_line in enumerate(file, start=1):
             line = raw_line.strip()
 
-            if not line:
+            if not line or line.startswith("#"):
                 continue
 
             parts = line.split()
@@ -154,17 +139,9 @@ def parse_arrivals(filepath: str) -> List[CustomerGroup]:
 
 
 def validate_arrivals(restaurant: Restaurant, groups: List[CustomerGroup]) -> None:
-    """
-    Ensure all arrivals occur within operating hours.
-    """
-    opening_time = getattr(restaurant, "opening_time", None)
-    closing_time = getattr(restaurant, "closing_time", None)
-
-    if opening_time is None or closing_time is None:
-        raise ValueError("Restaurant must have opening_time and closing_time defined.")
-
+    """Ensure all arrivals occur within operating hours."""
     for group in groups:
-        if group.arrival_time < opening_time or group.arrival_time > closing_time:
+        if group.arrival_time < restaurant.opening_time or group.arrival_time > restaurant.closing_time:
             raise ValueError(
                 f"Group {group.group_id} arrives at "
                 f"{minutes_to_time(group.arrival_time)}, "
@@ -173,9 +150,7 @@ def validate_arrivals(restaurant: Restaurant, groups: List[CustomerGroup]) -> No
 
 
 def load_scenario_from_user_input(arrivals_path: str):
-    """
-    Build restaurant from user input and load arrivals from file.
-    """
+    """Build restaurant from user input and load arrivals from file."""
     restaurant = build_restaurant_from_user_input()
     groups = parse_arrivals(arrivals_path)
     validate_arrivals(restaurant, groups)
