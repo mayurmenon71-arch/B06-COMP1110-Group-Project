@@ -1,71 +1,63 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
-
-from .customer_group import CustomerGroup
-from .table import Table
+from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
-class Restaurant:
-    name: str
-    opening_time: int
-    closing_time: int
-    tables: List[Table]
-    waiting_queue: List[CustomerGroup] = field(default_factory=list)
-    seated_groups: Dict[int, CustomerGroup] = field(default_factory=dict)
-    completed_groups: List[CustomerGroup] = field(default_factory=list)
-    left_groups: List[CustomerGroup] = field(default_factory=list)
+class CustomerGroup:
+    """
+    Represents one arriving customer group in the simulation.
 
-    def add_group_to_queue(self, group: CustomerGroup) -> None:
-        if group.status != "waiting":
-            raise ValueError("Only waiting groups can be added to the queue.")
-        self.waiting_queue.append(group)
+    Attributes:
+        group_id: Unique identifier for the group.
+        size: Number of customers in the group.
+        arrival_time: Time the group arrives at the restaurant.
+        dining_duration: Time the group occupies a table once seated.
+    """
 
-    def release_finished_tables(self, current_time: int) -> List[int]:
-        released: List[int] = []
+    group_id: int
+    size: int
+    arrival_time: int
+    dining_duration: int
+    seated_time: Optional[int] = None
+    leave_time: Optional[int] = None
+    assigned_table_id: Optional[int] = None
+    status: str = "waiting"  # waiting, seated, completed, left
 
-        for table in self.tables:
-            if table.current_group_id is None:
-                continue
+    def __post_init__(self) -> None:
+        if self.size <= 0:
+            raise ValueError("Group size must be positive.")
+        if self.arrival_time < 0:
+            raise ValueError("Arrival time cannot be negative.")
+        if self.dining_duration <= 0:
+            raise ValueError("Dining duration must be positive.")
 
-            group_id = table.current_group_id
-            if table.clear_if_finished(current_time):
-                released.append(table.table_id)
-                if group_id is not None and group_id in self.seated_groups:
-                    group = self.seated_groups.pop(group_id)
-                    group.complete_meal()
-                    self.completed_groups.append(group)
+    @property
+    def waiting_time(self) -> Optional[int]:
+        """Return waiting time after the group has been seated."""
+        if self.seated_time is None:
+            return None
+        return self.seated_time - self.arrival_time
 
-        return released
+    def seat(self, table_id: int, current_time: int) -> None:
+        """Mark the group as seated at a given time and table."""
+        if current_time < self.arrival_time:
+            raise ValueError("Cannot seat a group before it arrives.")
 
-    def find_earliest_suitable_group(self, table: Table) -> Optional[CustomerGroup]:
-        for group in self.waiting_queue:
-            if group.can_fit(table.capacity):
-                return group
-        return None
+        self.seated_time = current_time
+        self.leave_time = current_time + self.dining_duration
+        self.assigned_table_id = table_id
+        self.status = "seated"
 
-    def seat_group_at_table(self, group: CustomerGroup, table: Table, current_time: int) -> None:
-        if group not in self.waiting_queue:
-            raise ValueError("Group must be in the waiting queue before seating.")
-        if not group.can_fit(table.capacity):
-            raise ValueError("Group does not fit the selected table.")
+    def complete_meal(self) -> None:
+        """Mark the group as having finished dining."""
+        self.status = "completed"
 
-        table.seat_group(group.group_id, current_time, group.dining_duration)
-        group.seat(table.table_id, current_time)
+    def leave_queue(self) -> None:
+        """Mark the group as having left before being seated."""
+        self.status = "left"
 
-        self.waiting_queue.remove(group)
-        self.seated_groups[group.group_id] = group
-
-    def available_tables(self, current_time: int) -> List[Table]:
-        return [table for table in self.tables if table.is_available(current_time)]
-
-    def total_capacity(self) -> int:
-        return sum(table.capacity for table in self.tables)
-
-    def queue_length(self) -> int:
-        return len(self.waiting_queue)
-
-    def customers_waiting(self) -> int:
-        return sum(group.size for group in self.waiting_queue)
+    def can_fit(self, table_capacity: int) -> bool:
+        """Return True if the group can fit at a table of given capacity."""
+        return self.size <= table_capacity
