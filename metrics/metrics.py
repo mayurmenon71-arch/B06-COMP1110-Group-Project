@@ -47,6 +47,30 @@ def service_level(result: SimulationResult, threshold_minutes: int = 15) -> floa
     return round((within / len(seated)) * 100, 1)
 
 
+def reservation_success_rate(result: SimulationResult) -> float:
+    """Percentage of reservation groups that were eventually served."""
+    if result.total_reserved_groups == 0:
+        return 0.0
+    return round((result.served_reserved_groups / result.total_reserved_groups) * 100, 1)
+
+
+def reservation_timeout_rate(result: SimulationResult) -> float:
+    """Percentage of reservation groups that lost reservation priority due timeout."""
+    if result.total_reserved_groups == 0:
+        return 0.0
+    return round((result.timeout_reserved_groups / result.total_reserved_groups) * 100, 1)
+
+
+def reservation_utilization_rate(result: SimulationResult) -> float:
+    """How many reservation customers were actually seated with reservation priority."""
+    if result.total_reserved_groups == 0:
+        return 0.0
+    return round(
+        (result.served_reserved_with_priority_groups / result.total_reserved_groups) * 100,
+        1,
+    )
+
+
 def print_summary(result: SimulationResult, strategy_name: str) -> None:
     """Print a single-strategy summary to the terminal."""
     print(f"\n{'='*50}")
@@ -61,6 +85,11 @@ def print_summary(result: SimulationResult, strategy_name: str) -> None:
     print(f"  Max queue length:         {result.max_queue_length}")
     print(f"  Table utilization:        {table_utilization(result)}%")
     print(f"  Service level (<15 min):  {service_level(result)}%")
+    if result.reservation_enabled:
+        print(f"  Reserved groups:          {result.total_reserved_groups}")
+        print(f"  Reservation success:      {reservation_success_rate(result)}%")
+        print(f"  Reservation timeout:      {reservation_timeout_rate(result)}%")
+        print(f"  Reservation utilization:  {reservation_utilization_rate(result)}%")
     print(f"{'='*50}\n")
 
 
@@ -110,6 +139,17 @@ def compare_strategies(
         ("Table utilization",     [f"{table_utilization(r)}%" for _, r in results]),
         ("Service level (<15min)",[f"{service_level(r)}%" for _, r in results]),
     ]
+
+    include_reservation_rows = any(r.total_reserved_groups > 0 or r.reservation_enabled for _, r in results)
+    if include_reservation_rows:
+        rows_data.extend(
+            [
+                ("Reserved groups", [str(r.total_reserved_groups) for _, r in results]),
+                ("Reservation success", [f"{reservation_success_rate(r)}%" for _, r in results]),
+                ("Reservation timeout", [f"{reservation_timeout_rate(r)}%" for _, r in results]),
+                ("Reservation utilization", [f"{reservation_utilization_rate(r)}%" for _, r in results]),
+            ]
+        )
 
     for label, values in rows_data:
         print(_row(label, values))

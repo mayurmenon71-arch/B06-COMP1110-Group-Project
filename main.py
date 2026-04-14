@@ -9,6 +9,8 @@ import os
 import sys
 from typing import List, Optional, Tuple
 
+from models.restaurant import Restaurant
+from models.table import Table
 from models.queue_stratgies import (
     QueueRange,
     default_single_queue_range,
@@ -20,7 +22,12 @@ from models.queue_stratgies import (
 # We import from the local files directly by temporarily adding io/ to sys.path.
 _IO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "io")
 sys.path.insert(0, _IO_DIR)
-from input_parser import parse_restaurant_config, parse_arrivals, _non_comment_lines
+from input_parser import (
+    parse_restaurant_config,
+    parse_arrivals,
+    prompt_reservation_settings,
+    _non_comment_lines,
+)
 from validator import validate_restaurant, validate_arrivals
 sys.path.pop(0)
 
@@ -48,15 +55,83 @@ STRATEGY_OPTIONS: List[Tuple[str, tuple]] = [
     ("Fine-Grained FCFS  (1 / 2 / 3-4 / 5+ queues)",   parse_queue_ranges([(1,1),(2,2),(3,4),(5,None)])),
 ]
 
+DEFAULT_OPENING_TIME = 11 * 60
+DEFAULT_CLOSING_TIME = 22 * 60
+TEMP_SCENARIO_PATH = "scenarios/temp_scenario.txt"
+
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 def _divider(char: str = "─", width: int = 50) -> None:
-    print(char * width)
+    try:
+        print(char * width)
+    except UnicodeEncodeError:
+        print("-" * width)
 
 
 def _minutes_to_hhmm(minutes: int) -> str:
     return f"{minutes // 60:02d}:{minutes % 60:02d}"
+
+
+def _parse_time_input(raw: str) -> int:
+    value = raw.strip()
+    if not value:
+        raise ValueError("Time cannot be empty.")
+
+    if ":" in value:
+        parts = value.split(":")
+        if len(parts) != 2:
+            raise ValueError("Use HH:MM format, e.g. 22:00.")
+        hours = int(parts[0])
+        minutes = int(parts[1])
+        if not (0 <= hours <= 24 and 0 <= minutes < 60):
+            raise ValueError("Time must be between 00:00 and 24:00.")
+        if hours == 24 and minutes != 0:
+            raise ValueError("24:00 is the latest valid HH:MM time.")
+        return hours * 60 + minutes
+
+    total_minutes = int(value)
+    if not (0 <= total_minutes <= 24 * 60):
+        raise ValueError("Minutes must be between 0 and 1440.")
+    return total_minutes
+
+
+def _prompt_non_empty(prompt: str, default: Optional[str] = None) -> str:
+    while True:
+        raw = input(prompt).strip()
+        if raw:
+            return raw
+        if default is not None:
+            return default
+        print("  Input cannot be empty.")
+
+
+def _prompt_positive_int(prompt: str) -> int:
+    while True:
+        raw = input(prompt).strip()
+        try:
+            value = int(raw)
+            if value > 0:
+                return value
+        except ValueError:
+            pass
+        print("  Please enter a positive whole number.")
+
+
+def _prompt_time(prompt: str, default_minutes: Optional[int] = None) -> int:
+    while True:
+        if default_minutes is None:
+            raw = input(prompt).strip()
+        else:
+            default_label = _minutes_to_hhmm(default_minutes)
+            raw = input(f"{prompt} [{default_label}]: ").strip()
+            if not raw:
+                return default_minutes
+
+        try:
+            return _parse_time_input(raw)
+        except ValueError as e:
+            print(f"  {e}")
 
 
 def _print_header() -> None:
@@ -105,26 +180,101 @@ def _choose_from_list(options: List[str], prompt: str,
 def load_config(state: dict) -> None:
     print("\nAvailable configurations:")
     options = [f"{name}  ({_describe_config(path)})" for name, path in CONFIG_PRESETS]
+    options.append("Create custom configuration")
     options.append("Load from file path")
     idx = _choose_from_list(options, "Select configuration")[0]
 
     if idx < len(CONFIG_PRESETS):
         name, path = CONFIG_PRESETS[idx]
         filepath = path
+        try:
+            restaurant = parse_restaurant_config(filepath)
+        except (FileNotFoundError, ValueError) as e:
+            print(f"  Error: {e}")
+            return
+    elif idx == len(CONFIG_PRESETS):
+        try:
+            restaurant = _create_custom_restaurant()
+        except ValueError as e:
+            print(f"  Error: {e}")
+            return
     else:
         filepath = input("  Enter file path: ").strip()
+        try:
+            restaurant = parse_restaurant_config(filepath)
+        except (FileNotFoundError, ValueError) as e:
+            print(f"  Error: {e}")
+            return
 
     try:
-        restaurant = parse_restaurant_config(filepath)
+        prompt_reservation_settings(restaurant)
         validate_restaurant(restaurant)
-        state["restaurant_template"] = restaurant
-        state["config_label"] = restaurant.name
-        print(f"\n  Loaded: {restaurant.name}")
-        print(f"  Operating hours: {_minutes_to_hhmm(restaurant.opening_time)} – "
-              f"{_minutes_to_hhmm(restaurant.closing_time)}")
-        _print_table_summary(restaurant.tables)
-    except (FileNotFoundError, ValueError) as e:
+    except ValueError as e:
         print(f"  Error: {e}")
+        return
+
+    state["restaurant_template"] = restaurant
+    state["config_label"] = restaurant.name
+    print(f"\n  Loaded: {restaurant.name}")
+    print(f"  Operating hours: {_minutes_to_hhmm(restaurant.opening_time)} – "
+          f"{_minutes_to_hhmm(restaurant.closing_time)}")
+    _print_table_summary(restaurant.tables)
+    if restaurant.reservation_enabled:
+        print(
+            "  Reservations: enabled "
+            f"(max reserved tables: {restaurant.max_reserved_tables}, "
+            f"hold: {restaurant.reservation_hold_minutes} min)"
+        )
+    else:
+        print("  Reservations: disabled")
+
+
+def _create_custom_restaurant() -> Restaurant:
+    print("\nCreate custom restaurant configuration")
+    print("  Enter times as HH:MM or minutes from midnight.")
+    print("  Add each table type as 'capacity + number of tables'.")
+
+    name = _prompt_non_empty("  Restaurant name [Custom Restaurant]: ", default="Custom Restaurant")
+    opening_time = _prompt_time("  Opening time", default_minutes=DEFAULT_OPENING_TIME)
+    closing_time = _prompt_time("  Closing time", default_minutes=DEFAULT_CLOSING_TIME)
+
+    if closing_time <= opening_time:
+        raise ValueError("Closing time must be later than opening time.")
+
+    tables: List[Table] = []
+    table_id = 1
+
+    while True:
+        capacity_raw = input("  Table capacity (press Enter when finished): ").strip()
+        if not capacity_raw:
+            if tables:
+                break
+            print("  Add at least one table type first.")
+            continue
+
+        try:
+            capacity = int(capacity_raw)
+        except ValueError:
+            print("  Capacity must be a whole number.")
+            continue
+
+        if capacity <= 0:
+            print("  Capacity must be positive.")
+            continue
+
+        count = _prompt_positive_int(f"  Number of {capacity}-seat tables: ")
+        for _ in range(count):
+            tables.append(Table(table_id=table_id, capacity=capacity))
+            table_id += 1
+
+    restaurant = Restaurant(
+        name=name,
+        opening_time=opening_time,
+        closing_time=closing_time,
+        tables=tables,
+    )
+    validate_restaurant(restaurant)
+    return restaurant
 
 
 def _describe_config(path: str) -> str:
@@ -148,6 +298,51 @@ def _print_table_summary(tables) -> None:
     parts = [f"{cnt} tables ({cap}-seat)" for cap, cnt in sorted(counts.items())]
     print(f"  Tables: {', '.join(parts)}")
     print(f"  Total: {len(tables)} tables, {sum(t.capacity for t in tables)} seats")
+
+
+def _fit_arrivals_to_restaurant(arrivals, restaurant: Restaurant):
+    max_capacity = max(table.capacity for table in restaurant.tables)
+    valid_table_ids = {table.table_id for table in restaurant.tables}
+    kept = [
+        group for group in arrivals
+        if (
+            restaurant.opening_time <= group.arrival_time <= restaurant.closing_time
+            and group.size <= max_capacity
+        )
+    ]
+
+    removed_before = sum(1 for group in arrivals if group.arrival_time < restaurant.opening_time)
+    removed_after = sum(1 for group in arrivals if group.arrival_time > restaurant.closing_time)
+    removed_too_large = sum(1 for group in arrivals if group.size > max_capacity)
+    adjusted_table_preferences = 0
+
+    for group in kept:
+        if group.preferred_table_id is not None and group.preferred_table_id not in valid_table_ids:
+            group.preferred_table_id = None
+            adjusted_table_preferences += 1
+        if (
+            group.preferred_table_capacity is not None
+            and group.preferred_table_capacity > max_capacity
+        ):
+            group.preferred_table_capacity = None
+            adjusted_table_preferences += 1
+
+    if removed_before or removed_after or removed_too_large or adjusted_table_preferences:
+        print(
+            "  Adjusted scenario to match restaurant settings "
+            f"({_minutes_to_hhmm(restaurant.opening_time)} – "
+            f"{_minutes_to_hhmm(restaurant.closing_time)})."
+        )
+        if removed_before:
+            print(f"  Removed {removed_before} groups arriving before opening.")
+        if removed_after:
+            print(f"  Removed {removed_after} groups arriving after closing.")
+        if removed_too_large:
+            print(f"  Removed {removed_too_large} groups larger than the biggest table ({max_capacity} seats).")
+        if adjusted_table_preferences:
+            print(f"  Cleared {adjusted_table_preferences} invalid reservation table preferences.")
+
+    return kept
 
 
 def select_strategy(state: dict) -> None:
@@ -182,6 +377,7 @@ def choose_scenario(state: dict) -> None:
     try:
         arrivals = parse_arrivals(filepath)
         if state.get("restaurant_template"):
+            arrivals = _fit_arrivals_to_restaurant(arrivals, state["restaurant_template"])
             validate_arrivals(arrivals, state["restaurant_template"])
         state["arrivals"] = arrivals
         state["scenario_label"] = label
@@ -198,10 +394,23 @@ def _generate_scenario(state: dict) -> Tuple[Optional[str], str]:
     try:
         speed, demand = choose_generated_scenario()
         r = state["restaurant_template"]
-        arrivals = generate_arrivals(r.opening_time, r.closing_time, speed, demand)
-        path = f"scenarios/arrivals_generated_{speed}_{demand}.txt"
+        table_capacities = [table.capacity for table in r.tables]
+        max_table_capacity = max(table.capacity for table in r.tables)
+        arrivals = generate_arrivals(
+            r.opening_time,
+            r.closing_time,
+            speed,
+            demand,
+            max_group_size=max_table_capacity,
+            table_capacities=table_capacities,
+            reservation_enabled=r.reservation_enabled,
+            max_reserved_tables=r.max_reserved_tables,
+            reservation_window_minutes=r.reservation_window_minutes,
+            reservation_hold_minutes=r.reservation_hold_minutes,
+        )
+        path = TEMP_SCENARIO_PATH
         save_arrivals_to_file(arrivals, path)
-        print(f"  Generated {len(arrivals)} groups. Saved to {path}")
+        print(f"  Generated {len(arrivals)} groups. Saved to {path} (overwritten each time).")
         return path, f"Generated ({speed}, {demand})"
     except (ValueError, KeyboardInterrupt) as e:
         print(f"  Error: {e}")
