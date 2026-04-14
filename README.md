@@ -28,7 +28,7 @@ Run from the project root directory.
 ## Program Menu
 
 ```
-1. Load restaurant configuration   — choose a preset or load from file
+1. Load restaurant configuration   — choose a preset, create one interactively, or load from file
 2. Select queue strategy           — single queue, size-based, or fine-grained
 3. Choose arrival scenario         — preset scenario or generate/load your own
 4. Run simulation                  — runs all selected strategies
@@ -56,12 +56,27 @@ Small Cafe
 - Line 2: `opening_time closing_time` in minutes from midnight (e.g. `660` = 11:00, `1320` = 22:00)
 - Remaining lines: `capacity count` — one line per table type
 
+You can also choose `Create custom configuration` in the program menu and enter:
+- restaurant name
+- opening time
+- closing time
+- table capacity and number of tables for each table type
+- reservation settings (enable/disable, reservation table proportion, hold duration)
+
 ### Customer Arrivals (`scenarios/*.txt`)
 
 ```
 # group_id size arrival_time dining_duration
 1 3 12:05 45
 2 1 12:07 30
+```
+
+Optional reservation-aware format:
+
+```
+# group_id size arrival_time dining_duration is_reserved reservation_time reservation_expiry_time preferred_table_id preferred_table_capacity
+10 4 18:02 60 1 18:00 18:10 - 4
+11 2 18:05 45 0 - - - -
 ```
 
 - `group_id`: unique integer
@@ -97,7 +112,14 @@ Select option 3 then "Generate new scenario" from the arrival menu. You will be 
 - **Service speed**: fast / normal / slow (affects dining duration)
 - **Demand level**: low / average / high (affects number of arrivals)
 
-The generated file is saved to `scenarios/` automatically.
+Generated arrivals use the currently loaded restaurant's opening and closing times, including any custom times entered interactively.
+The generator also adapts to the loaded restaurant layout:
+- larger restaurants generate more traffic than smaller ones
+- the table-size mix influences the generated group-size mix
+- generated group sizes are capped to the restaurant's largest table, so impossible-to-seat groups are not created
+- if reservations are enabled, generated scenarios include reservation groups and reservation metadata
+
+The generated file is saved as `scenarios/temp_scenario.txt` and overwritten each time you generate a new scenario.
 
 ---
 
@@ -122,6 +144,9 @@ The generated file is saved to `scenarios/` automatically.
 | Max queue length | Peak number of groups waiting simultaneously |
 | Table utilization | % of time tables were occupied during operating hours |
 | Service level | % of served groups seated within 15 minutes |
+| Reservation utilization | % of reservation groups seated with reservation priority |
+| Reservation success rate | % of reservation groups eventually served |
+| Reservation timeout rate | % of reservation groups that lost reservation priority by timeout |
 
 ---
 

@@ -20,6 +20,16 @@ class CustomerGroup:
     size: int
     arrival_time: int
     dining_duration: int
+    is_reserved: bool = False
+    reservation_time: Optional[int] = None
+    reservation_expiry_time: Optional[int] = None
+    preferred_table_id: Optional[int] = None
+    preferred_table_capacity: Optional[int] = None
+    reserved_table_id: Optional[int] = None
+    reservation_priority_lost: bool = False
+    reservation_timed_out: bool = False
+    reservation_late_arrival: bool = False
+    reservation_seated_with_priority: bool = False
     seated_time: Optional[int] = None
     leave_time: Optional[int] = None
     assigned_table_id: Optional[int] = None
@@ -32,6 +42,20 @@ class CustomerGroup:
             raise ValueError("Arrival time cannot be negative.")
         if self.dining_duration <= 0:
             raise ValueError("Dining duration must be positive.")
+        if self.reservation_time is not None and self.reservation_time < 0:
+            raise ValueError("Reservation time cannot be negative.")
+        if self.reservation_expiry_time is not None and self.reservation_expiry_time < 0:
+            raise ValueError("Reservation expiry time cannot be negative.")
+        if (
+            self.reservation_time is not None
+            and self.reservation_expiry_time is not None
+            and self.reservation_expiry_time < self.reservation_time
+        ):
+            raise ValueError("Reservation expiry time cannot be earlier than reservation time.")
+        if self.preferred_table_id is not None and self.preferred_table_id <= 0:
+            raise ValueError("Preferred table id must be positive.")
+        if self.preferred_table_capacity is not None and self.preferred_table_capacity <= 0:
+            raise ValueError("Preferred table capacity must be positive.")
 
     @property
     def waiting_time(self) -> Optional[int]:
@@ -61,3 +85,7 @@ class CustomerGroup:
     def can_fit(self, table_capacity: int) -> bool:
         """Return True if the group can fit at a table of given capacity."""
         return self.size <= table_capacity
+
+    @property
+    def is_reservation_customer(self) -> bool:
+        return self.is_reserved

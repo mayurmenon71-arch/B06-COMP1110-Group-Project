@@ -141,6 +141,50 @@ def find_fcfs_group_from_queues(
     )
 
 
+def find_group_by_queue_order(
+    queues: Sequence[Sequence[CustomerGroup]],
+    table_capacity: int,
+    queue_order: Sequence[int] | None = None,
+) -> Optional[CustomerGroup]:
+    """
+    Pick the first fitting group by scanning queues in a specific order.
+    Within each queue, FCFS order is preserved.
+    """
+    if queue_order is None:
+        queue_order = tuple(range(len(queues)))
+
+    for queue_idx in queue_order:
+        if queue_idx < 0 or queue_idx >= len(queues):
+            continue
+        for group in queues[queue_idx]:
+            if group.can_fit(table_capacity):
+                return group
+    return None
+
+
+def find_best_fit_group_from_queues(
+    queues: Sequence[Sequence[CustomerGroup]],
+    table_capacity: int,
+) -> Optional[CustomerGroup]:
+    """
+    Choose the fitting group that minimizes wasted seats (best fit).
+    Ties are broken by earlier arrival, then lower group_id.
+    """
+    candidates: List[CustomerGroup] = []
+    for queue in queues:
+        for group in queue:
+            if group.can_fit(table_capacity):
+                candidates.append(group)
+
+    if not candidates:
+        return None
+
+    return min(
+        candidates,
+        key=lambda g: (table_capacity - g.size, g.arrival_time, g.group_id),
+    )
+
+
 def find_group_for_table_with_key(
     queues: Sequence[Sequence[CustomerGroup]],
     table_capacity: int,

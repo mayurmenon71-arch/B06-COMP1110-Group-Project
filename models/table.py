@@ -15,6 +15,8 @@ class Table:
     capacity: int
     occupied_until: Optional[int] = None
     current_group_id: Optional[int] = None
+    reserved_until: Optional[int] = None
+    reserved_for_group: Optional[int] = None
 
     def __post_init__(self) -> None:
         if self.capacity <= 0:
@@ -31,6 +33,8 @@ class Table:
         if dining_duration <= 0:
             raise ValueError("Dining duration must be positive.")
 
+        # Once a table is seated, any hold on that table is consumed.
+        self.clear_reservation()
         self.current_group_id = group_id
         self.occupied_until = current_time + dining_duration
 
@@ -49,3 +53,13 @@ class Table:
     def occupied(self) -> bool:
         """Return whether the table is currently occupied."""
         return self.current_group_id is not None
+
+    def reserve_for_group(self, group_id: int, reserved_until: int) -> None:
+        if reserved_until < 0:
+            raise ValueError("Reserved-until time cannot be negative.")
+        self.reserved_for_group = group_id
+        self.reserved_until = reserved_until
+
+    def clear_reservation(self) -> None:
+        self.reserved_until = None
+        self.reserved_for_group = None
