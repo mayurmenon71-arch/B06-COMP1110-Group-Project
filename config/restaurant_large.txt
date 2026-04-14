@@ -1,0 +1,11 @@
+# Large Dim Sum Hall configuration
+# Many large tables suited for big family groups
+# name
+Large Dim Sum Hall
+# opening_time closing_time (minutes from midnight: 660=11:00, 1320=22:00)
+660 1320
+# capacity count
+2 4
+4 4
+6 4
+8 2

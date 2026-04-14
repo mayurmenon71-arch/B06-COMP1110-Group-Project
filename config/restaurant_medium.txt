@@ -1,0 +1,10 @@
+# Medium Restaurant configuration
+# Mix of small, medium and large tables
+# name
+Medium Restaurant
+# opening_time closing_time (minutes from midnight: 660=11:00, 1320=22:00)
+660 1320
+# capacity count
+2 4
+4 6
+6 2

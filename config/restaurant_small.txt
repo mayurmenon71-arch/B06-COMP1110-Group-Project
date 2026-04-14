@@ -1,0 +1,9 @@
+# Small Cafe configuration
+# Mostly small tables suitable for couples and solo diners
+# name
+Small Cafe
+# opening_time closing_time (minutes from midnight: 660=11:00, 1320=22:00)
+660 1320
+# capacity count
+2 6
+4 2
