@@ -33,7 +33,10 @@ class Restaurant:
             self.max_reserved_tables = 0
             self.reserved_tables.clear()
             return
-        self.max_reserved_tables = int(self.reservation_proportion * len(self.tables))
+        raw_limit = int(self.reservation_proportion * len(self.tables))
+        if self.reservation_proportion > 0 and len(self.tables) > 0:
+            raw_limit = max(1, raw_limit)
+        self.max_reserved_tables = min(len(self.tables), raw_limit)
 
     def configure_reservations(
         self,

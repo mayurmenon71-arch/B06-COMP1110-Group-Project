@@ -345,6 +345,39 @@ def _fit_arrivals_to_restaurant(arrivals, restaurant: Restaurant):
     return kept
 
 
+def _ensure_reservations_in_loaded_scenario(arrivals, restaurant: Restaurant) -> int:
+    """
+    Backward-compatibility helper:
+    Old scenario files may have no reservation columns. If reservation mode is enabled
+    and no reservation groups exist, tag a small subset as reservation groups so the
+    reservation system can be exercised without regenerating files.
+    """
+    if not restaurant.reservation_enabled:
+        return 0
+    if restaurant.max_reserved_tables <= 0:
+        return 0
+    if any(group.is_reserved for group in arrivals):
+        return 0
+
+    candidates = [group for group in arrivals if group.size <= max(table.capacity for table in restaurant.tables)]
+    if not candidates:
+        return 0
+
+    target = min(len(candidates), max(1, restaurant.max_reserved_tables))
+    step = max(1, len(candidates) // target)
+    selected = candidates[::step][:target]
+    table_capacities = sorted({table.capacity for table in restaurant.tables})
+
+    for group in selected:
+        group.is_reserved = True
+        group.reservation_time = group.arrival_time
+        group.reservation_expiry_time = group.reservation_time + restaurant.reservation_hold_minutes
+        suitable = [cap for cap in table_capacities if cap >= group.size]
+        group.preferred_table_capacity = suitable[0] if suitable else None
+
+    return len(selected)
+
+
 def select_strategy(state: dict) -> None:
     print("\nQueue strategies (select one or more, e.g. 1,2):")
     options = [name for name, _ in STRATEGY_OPTIONS]
@@ -378,6 +411,13 @@ def choose_scenario(state: dict) -> None:
         arrivals = parse_arrivals(filepath)
         if state.get("restaurant_template"):
             arrivals = _fit_arrivals_to_restaurant(arrivals, state["restaurant_template"])
+            added_reservations = _ensure_reservations_in_loaded_scenario(arrivals, state["restaurant_template"])
+            if added_reservations:
+                print(
+                    "  Added "
+                    f"{added_reservations} reservation groups to this scenario "
+                    "for reservation-mode compatibility."
+                )
             validate_arrivals(arrivals, state["restaurant_template"])
         state["arrivals"] = arrivals
         state["scenario_label"] = label
