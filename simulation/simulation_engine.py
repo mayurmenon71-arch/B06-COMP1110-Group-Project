@@ -1,0 +1,104 @@
+"""
+Core simulation engine: drives the minute-by-minute time loop.
+
+Usage:
+    result = run_simulation(restaurant, arrivals, queue_ranges)
+
+The restaurant object is mutated in place. Pass a deep copy if you need
+to run multiple strategies on the same scenario:
+
+    import copy
+    result = run_simulation(copy.deepcopy(restaurant), copy.deepcopy(arrivals), ranges)
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import List, Sequence
+
+from models.customer_group import CustomerGroup
+from models.restaurant import Restaurant
+from models.table_assignment import run_seating_round
+from models.queue_stratgies import QueueRange
+
+
+@dataclass
+class SimulationResult:
+    """Holds all output data from one simulation run."""
+    completed_groups: List[CustomerGroup]   # seated and finished dining
+    left_groups: List[CustomerGroup]        # dropped out before being seated
+    still_waiting: List[CustomerGroup]      # still in queue at closing time
+    total_arrived: int                      # total groups that showed up
+    max_queue_length: int                   # peak waiting queue length
+    occupied_ticks: int                     # sum of occupied-table-count across all ticks
+    total_ticks: int                        # simulation duration in minutes
+    total_tables: int                       # number of tables in the restaurant
+
+
+def run_simulation(
+    restaurant: Restaurant,
+    arrivals: List[CustomerGroup],
+    queue_ranges: Sequence[QueueRange],
+    dropout_threshold: int = 30,
+) -> SimulationResult:
+    """
+    Run the restaurant queue simulation minute by minute.
+
+    Args:
+        restaurant:        A fresh Restaurant object (will be mutated).
+        arrivals:          List of CustomerGroup objects sorted by arrival_time.
+        queue_ranges:      Defines queue strategy (single or size-based).
+        dropout_threshold: Minutes a group waits before leaving (default 30).
+
+    Returns:
+        SimulationResult with all metrics data.
+    """
+    max_queue_length = 0
+    occupied_ticks = 0
+    total_ticks = restaurant.closing_time - restaurant.opening_time
+
+    # Index arrivals by minute for O(1) lookup
+    arrivals_by_minute: dict[int, List[CustomerGroup]] = {}
+    for group in arrivals:
+        arrivals_by_minute.setdefault(group.arrival_time, []).append(group)
+
+    for t in range(restaurant.opening_time, restaurant.closing_time + 1):
+        # 1. Add new arrivals this minute
+        for group in arrivals_by_minute.get(t, []):
+            restaurant.add_group_to_queue(group)
+
+        # 2. Dropout: remove groups that have waited too long
+        to_drop = [
+            g for g in restaurant.waiting_queue
+            if (t - g.arrival_time) > dropout_threshold
+        ]
+        for group in to_drop:
+            group.leave_queue()
+            restaurant.waiting_queue.remove(group)
+            restaurant.left_groups.append(group)
+
+        # 3. Free tables whose groups have finished dining
+        restaurant.release_finished_tables(t)
+
+        # 4. Seat as many waiting groups as possible
+        run_seating_round(restaurant, t, queue_ranges)
+
+        # 5. Track peak queue length
+        q_len = len(restaurant.waiting_queue)
+        if q_len > max_queue_length:
+            max_queue_length = q_len
+
+        # 6. Count occupied tables this tick for utilization
+        occupied_ticks += sum(
+            1 for table in restaurant.tables if not table.is_available(t)
+        )
+
+    return SimulationResult(
+        completed_groups=list(restaurant.completed_groups),
+        left_groups=list(restaurant.left_groups),
+        still_waiting=list(restaurant.waiting_queue),
+        total_arrived=len(arrivals),
+        max_queue_length=max_queue_length,
+        occupied_ticks=occupied_ticks,
+        total_ticks=total_ticks,
+        total_tables=len(restaurant.tables),
+    )
