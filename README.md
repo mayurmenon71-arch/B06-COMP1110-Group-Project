@@ -144,9 +144,38 @@ The generated file is saved as `scenarios/temp_scenario.txt` and overwritten eac
 | Max queue length | Peak number of groups waiting simultaneously |
 | Table utilization | % of time tables were occupied during operating hours |
 | Service level | % of served groups seated within 15 minutes |
+| Abandonment rate | % of groups that left before being seated |
+| Avg wait before abandonment | Average waiting time before a group abandoned |
+| Abandoned covers | Total customer count lost from abandoned groups |
 | Reservation utilization | % of reservation groups seated with reservation priority |
 | Reservation success rate | % of reservation groups eventually served |
 | Reservation timeout rate | % of reservation groups that lost reservation priority by timeout |
+
+---
+
+## Abandonment Model
+
+The simulator uses an event-compatible cumulative abandonment model instead of a fixed waiting-time cutoff. Abandonment is checked when the simulation processes events such as arrivals, table releases, reservation expiry, or seating decisions.
+
+Default walk-in cumulative abandonment curve:
+
+| Wait time | Cumulative abandonment probability |
+|-----------|------------------------------------|
+| `<5 min` | 0.02 |
+| `5-10 min` | 0.08 |
+| `10-15 min` | 0.18 |
+| `15-20 min` | 0.35 |
+| `20-25 min` | 0.55 |
+| `25-30 min` | 0.72 |
+| `30+ min` | 0.85 |
+
+These values are cumulative probabilities, not per-minute probabilities. Between checks, the simulator converts cumulative probability into conditional probability:
+
+```
+incremental_p = (P_now - P_prev) / (1 - P_prev)
+```
+
+Reserved groups use the same curve multiplied by `0.65`, making them less likely to abandon than walk-ins.
 
 ---
 

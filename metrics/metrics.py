@@ -26,8 +26,36 @@ def groups_served(result: SimulationResult) -> int:
 
 
 def groups_left(result: SimulationResult) -> int:
-    """Number of groups that left before being seated (dropouts)."""
-    return len(result.left_groups)
+    """Number of groups that abandoned before being seated."""
+    return result.total_abandoned_groups
+
+
+def abandonment_rate(result: SimulationResult) -> float:
+    if result.total_arrived == 0:
+        return 0.0
+    return round((result.total_abandoned_groups / result.total_arrived) * 100, 1)
+
+
+def reserved_abandonment_rate(result: SimulationResult) -> float:
+    if result.total_reserved_groups == 0:
+        return 0.0
+    return round((result.abandoned_reserved_groups / result.total_reserved_groups) * 100, 1)
+
+
+def walkin_abandonment_rate(result: SimulationResult) -> float:
+    total_walkins = result.total_arrived - result.total_reserved_groups
+    if total_walkins <= 0:
+        return 0.0
+    return round((result.abandoned_walkin_groups / total_walkins) * 100, 1)
+
+
+def avg_wait_before_abandonment(result: SimulationResult) -> float:
+    waits = [
+        group.leave_time - group.arrival_time
+        for group in result.left_groups
+        if group.leave_time is not None
+    ]
+    return round(sum(waits) / len(waits), 1) if waits else 0.0
 
 
 def table_utilization(result: SimulationResult) -> float:
@@ -78,7 +106,10 @@ def print_summary(result: SimulationResult, strategy_name: str) -> None:
     print(f"{'='*50}")
     print(f"  Groups arrived:           {result.total_arrived}")
     print(f"  Groups served:            {groups_served(result)}")
-    print(f"  Groups left (dropout):    {groups_left(result)}")
+    print(f"  Groups abandoned:         {groups_left(result)}")
+    print(f"  Abandonment rate:         {abandonment_rate(result)}%")
+    print(f"  Avg wait before abandon:  {avg_wait_before_abandonment(result)} min")
+    print(f"  Abandoned covers:         {result.abandoned_covers}")
     print(f"  Still waiting at close:   {len(result.still_waiting)}")
     print(f"  Avg waiting time:         {avg_waiting_time(result)} min")
     print(f"  Max waiting time:         {max_waiting_time(result)} min")
@@ -87,6 +118,8 @@ def print_summary(result: SimulationResult, strategy_name: str) -> None:
     print(f"  Service level (<15 min):  {service_level(result)}%")
     if result.reservation_enabled:
         print(f"  Reserved groups:          {result.total_reserved_groups}")
+        print(f"  Reserved abandon rate:    {reserved_abandonment_rate(result)}%")
+        print(f"  Walk-in abandon rate:     {walkin_abandonment_rate(result)}%")
         print(f"  Reservation success:      {reservation_success_rate(result)}%")
         print(f"  Reservation timeout:      {reservation_timeout_rate(result)}%")
         print(f"  Reservation utilization:  {reservation_utilization_rate(result)}%")
@@ -131,7 +164,10 @@ def compare_strategies(
     rows_data = [
         ("Groups arrived",        [str(r.total_arrived) for _, r in results]),
         ("Groups served",         [str(groups_served(r)) for _, r in results]),
-        ("Groups left (dropout)", [str(groups_left(r)) for _, r in results]),
+        ("Groups abandoned",      [str(groups_left(r)) for _, r in results]),
+        ("Abandonment rate",      [f"{abandonment_rate(r)}%" for _, r in results]),
+        ("Avg abandon wait",      [str(avg_wait_before_abandonment(r)) for _, r in results]),
+        ("Abandoned covers",      [str(r.abandoned_covers) for _, r in results]),
         ("Still waiting at close",[str(len(r.still_waiting)) for _, r in results]),
         ("Avg wait time (min)",   [str(avg_waiting_time(r)) for _, r in results]),
         ("Max wait time (min)",   [str(max_waiting_time(r)) for _, r in results]),
@@ -145,6 +181,8 @@ def compare_strategies(
         rows_data.extend(
             [
                 ("Reserved groups", [str(r.total_reserved_groups) for _, r in results]),
+                ("Reserved abandon", [f"{reserved_abandonment_rate(r)}%" for _, r in results]),
+                ("Walk-in abandon", [f"{walkin_abandonment_rate(r)}%" for _, r in results]),
                 ("Reservation success", [f"{reservation_success_rate(r)}%" for _, r in results]),
                 ("Reservation timeout", [f"{reservation_timeout_rate(r)}%" for _, r in results]),
                 ("Reservation utilization", [f"{reservation_utilization_rate(r)}%" for _, r in results]),

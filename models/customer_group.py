@@ -30,6 +30,8 @@ class CustomerGroup:
     reservation_timed_out: bool = False
     reservation_late_arrival: bool = False
     reservation_seated_with_priority: bool = False
+    has_left: bool = False
+    last_cumulative_abandonment_prob: float = 0.0
     seated_time: Optional[int] = None
     leave_time: Optional[int] = None
     assigned_table_id: Optional[int] = None
@@ -56,6 +58,8 @@ class CustomerGroup:
             raise ValueError("Preferred table id must be positive.")
         if self.preferred_table_capacity is not None and self.preferred_table_capacity <= 0:
             raise ValueError("Preferred table capacity must be positive.")
+        if not (0.0 <= self.last_cumulative_abandonment_prob <= 1.0):
+            raise ValueError("Last cumulative abandonment probability must be between 0 and 1.")
 
     @property
     def waiting_time(self) -> Optional[int]:
@@ -78,9 +82,12 @@ class CustomerGroup:
         """Mark the group as having finished dining."""
         self.status = "completed"
 
-    def leave_queue(self) -> None:
+    def leave_queue(self, current_time: Optional[int] = None) -> None:
         """Mark the group as having left before being seated."""
         self.status = "left"
+        self.has_left = True
+        if current_time is not None:
+            self.leave_time = current_time
 
     def can_fit(self, table_capacity: int) -> bool:
         """Return True if the group can fit at a table of given capacity."""
@@ -89,3 +96,7 @@ class CustomerGroup:
     @property
     def is_reservation_customer(self) -> bool:
         return self.is_reserved
+
+    @property
+    def group_size(self) -> int:
+        return self.size

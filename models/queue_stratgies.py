@@ -223,9 +223,6 @@ def vip_then_fcfs_key(
     """
     return lambda g: (-vip_rank(g), g.arrival_time, g.group_id)
 
-<<<<<<< HEAD
-=======
-
 def find_fcfs_group_round_robin(
     queues: Sequence[Sequence[CustomerGroup]],
     table_capacity: int,
@@ -245,5 +242,3 @@ def find_fcfs_group_round_robin(
             if group.can_fit(table_capacity):
                 return group
     return None
-
->>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
