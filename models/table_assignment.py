@@ -15,6 +15,7 @@ from .queue_stratgies import (
     find_best_fit_group_from_queues,
     find_fcfs_group_for_table,
     find_fcfs_group_from_queues,
+    find_fcfs_group_round_robin,
     find_group_by_queue_order,
 )
 
@@ -24,7 +25,9 @@ def run_seating_round(
     current_time: int,
     queue_ranges: Sequence[QueueRange],
     queues: Sequence[List[CustomerGroup]] | None = None,
-) -> List[Tuple[CustomerGroup, Table]]:
+    round_robin_index: int = 0,
+    use_round_robin: bool = False,
+) -> Tuple[int, List[Tuple[CustomerGroup, Table]]]:
     """
     Attempt to seat as many waiting groups as possible at currently free tables.
 
@@ -32,18 +35,20 @@ def run_seating_round(
     tables for large groups.
 
     Args:
-        restaurant:    The restaurant whose waiting_queue and tables are used.
-        current_time:  Current simulation time (minutes).
-        queue_ranges:  Defines how groups are split into queues by size.
-                       Use default_single_queue_range() for one queue,
-                       default_multi_queue_ranges() for 1-2 / 3-4 / 5+ split,
-                       or any custom Sequence[QueueRange].
-        queues:        Optional persistent queue-state lists maintained by the
-                       simulation engine. If omitted, queues are rebuilt from
-                       restaurant.waiting_queue for backward compatibility.
+        restaurant:         The restaurant whose waiting_queue and tables are used.
+        current_time:       Current simulation time (minutes).
+        queue_ranges:       Defines how groups are split into queues by size.
+                            Use default_single_queue_range() for one queue,
+                            default_multi_queue_ranges() for 1-2 / 3-4 / 5+ split,
+                            or any custom Sequence[QueueRange].
+        queues:             Optional persistent queue-state lists maintained by the
+                            simulation engine. If omitted, queues are rebuilt from
+                            restaurant.waiting_queue for backward compatibility.
+        round_robin_index:  Current rotation index for round-robin strategy.
+                            Ignored for other strategies.
 
     Returns:
-        List of (CustomerGroup, Table) pairs seated this round.
+        Tuple of (updated_round_robin_index, list of (CustomerGroup, Table) pairs seated).
     """
     available_tables = sorted(
         restaurant.available_tables(current_time),
@@ -51,6 +56,7 @@ def run_seating_round(
     )
     seated: List[Tuple[CustomerGroup, Table]] = []
     fairness_override_active = _fairness_override_active(restaurant, current_time)
+    rr_index = round_robin_index
 
     for table in available_tables:
         queue_state = list(queues) if queues is not None else _build_queues(
@@ -71,7 +77,11 @@ def run_seating_round(
             reserved_priority_selected = group is not None
 
         if group is None:
-            group = _select_group_for_table(restaurant, eligible_queues, queue_ranges, table.capacity)
+            group = _select_group_for_table(
+                restaurant, eligible_queues, queue_ranges, table.capacity,
+                round_robin_index=rr_index,
+                use_round_robin=use_round_robin,
+            )
 
         if group is None:
             continue
@@ -81,8 +91,11 @@ def run_seating_round(
         if queues is not None:
             _remove_group_from_queues(queues, group)
         seated.append((group, table))
+        # Advance round-robin index each time a group is seated
+        if len(queue_ranges) > 1:
+            rr_index = (rr_index + 1) % len(queue_ranges)
 
-    return seated
+    return rr_index, seated
 
 
 def _build_queues(
@@ -112,11 +125,14 @@ def _select_group_for_table(
     queues: Sequence[Sequence[CustomerGroup]],
     queue_ranges: Sequence[QueueRange],
     table_capacity: int,
+    round_robin_index: int = 0,
+    use_round_robin: bool = False,
 ) -> CustomerGroup | None:
     """
     Use strategy-specific selection logic based on queue configuration:
     - 1 queue: classic single-queue FCFS.
-    - 3 queues: size-based queue priority (queue order).
+    - use_round_robin=True: rotate across queues starting from round_robin_index.
+    - 3 queues: size-based queue priority (fixed queue order 0→1→2).
     - 4+ queues: best-fit across queues for finer seat matching.
     - fallback: global FCFS across queues.
     """
@@ -126,6 +142,9 @@ def _select_group_for_table(
         if queues:
             return find_fcfs_group_for_table(queues[0], table_capacity)
         return find_fcfs_group_for_table(restaurant.waiting_queue, table_capacity)
+
+    if use_round_robin:
+        return find_fcfs_group_round_robin(queues, table_capacity, round_robin_index)
 
     if num_queues == 3:
         return find_group_by_queue_order(queues, table_capacity, queue_order=(0, 1, 2))

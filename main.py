@@ -49,10 +49,11 @@ SCENARIO_PRESETS = [
     ("Peak-hour, high demand",        "scenarios/arrivals_peak_high.txt"),
 ]
 
-STRATEGY_OPTIONS: List[Tuple[str, tuple]] = [
-    ("Single Queue FCFS  (all groups, one queue)",       default_single_queue_range()),
-    ("Size-Based FCFS    (1-2 / 3-4 / 5+ queues)",      default_multi_queue_ranges()),
-    ("Fine-Grained FCFS  (1 / 2 / 3-4 / 5+ queues)",   parse_queue_ranges([(1,1),(2,2),(3,4),(5,None)])),
+STRATEGY_OPTIONS: List[Tuple[str, tuple, bool]] = [
+    ("Single Queue FCFS  (all groups, one queue)",       default_single_queue_range(),                     False),
+    ("Size-Based FCFS    (1-2 / 3-4 / 5+ queues)",      default_multi_queue_ranges(),                     False),
+    ("Fine-Grained FCFS  (1 / 2 / 3-4 / 5+ queues)",   parse_queue_ranges([(1,1),(2,2),(3,4),(5,None)]), False),
+    ("Round-Robin FCFS   (1-2 / 3-4 / 5+ rotating)",   default_multi_queue_ranges(),                     True),
 ]
 
 DEFAULT_OPENING_TIME = 11 * 60
@@ -347,10 +348,11 @@ def _fit_arrivals_to_restaurant(arrivals, restaurant: Restaurant):
 
 def select_strategy(state: dict) -> None:
     print("\nQueue strategies (select one or more, e.g. 1,2):")
-    options = [name for name, _ in STRATEGY_OPTIONS]
+    options = [name for name, _, __ in STRATEGY_OPTIONS]
     indices = _choose_from_list(options, "Select strategy/strategies", allow_multiple=True)
     state["strategies"] = [(STRATEGY_OPTIONS[i][0].split("(")[0].strip(),
-                            STRATEGY_OPTIONS[i][1]) for i in indices]
+                            STRATEGY_OPTIONS[i][1],
+                            STRATEGY_OPTIONS[i][2]) for i in indices]
     state["strategy_label"] = " + ".join(s[0] for s in state["strategies"])
     print(f"  Selected: {state['strategy_label']}")
 
@@ -431,11 +433,12 @@ def run_sim(state: dict) -> None:
     print("\nRunning simulation...")
     results: List[Tuple[str, SimulationResult]] = []
 
-    for strategy_name, queue_ranges in state["strategies"]:
+    for strategy_name, queue_ranges, use_round_robin in state["strategies"]:
         # Deep copy so each strategy starts with a fresh restaurant + arrivals
         restaurant_copy = copy.deepcopy(state["restaurant_template"])
         arrivals_copy = copy.deepcopy(state["arrivals"])
-        result = run_simulation(restaurant_copy, arrivals_copy, queue_ranges)
+        result = run_simulation(restaurant_copy, arrivals_copy, queue_ranges,
+                                use_round_robin=use_round_robin)
         results.append((strategy_name, result))
         served = len(result.completed_groups)
         avg = sum(g.waiting_time for g in result.completed_groups if g.waiting_time is not None)
