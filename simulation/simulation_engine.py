@@ -46,6 +46,10 @@ def run_simulation(
     arrivals: List[CustomerGroup],
     queue_ranges: Sequence[QueueRange],
     dropout_threshold: int = 30,
+<<<<<<< HEAD
+=======
+    use_round_robin: bool = False,
+>>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
 ) -> SimulationResult:
     """
     Run the restaurant queue simulation minute by minute.
@@ -64,6 +68,10 @@ def run_simulation(
     reserved_table_ticks = 0
     total_ticks = restaurant.closing_time - restaurant.opening_time
     queues: List[List[CustomerGroup]] = [[] for _ in queue_ranges]
+<<<<<<< HEAD
+=======
+    round_robin_index: int = 0
+>>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
 
     # Index arrivals by minute for O(1) lookup
     arrivals_by_minute: dict[int, List[CustomerGroup]] = {}
@@ -93,7 +101,16 @@ def run_simulation(
         restaurant.refresh_reservations(t)
 
         # 4. Seat as many waiting groups as possible
+<<<<<<< HEAD
         run_seating_round(restaurant, t, queue_ranges, queues=queues)
+=======
+        round_robin_index, _ = run_seating_round(
+            restaurant, t, queue_ranges,
+            queues=queues,
+            round_robin_index=round_robin_index,
+            use_round_robin=use_round_robin,
+        )
+>>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
 
         # 5. Track peak queue length
         q_len = len(restaurant.waiting_queue)

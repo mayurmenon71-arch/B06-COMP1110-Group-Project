@@ -294,8 +294,11 @@ def generate_arrivals(
         if max_reserved_tables is None:
             if table_capacities:
                 max_reserved_tables = int(DEFAULT_RESERVATION_PROPORTION * len(table_capacities))
+<<<<<<< HEAD
                 if max_reserved_tables <= 0:
                     max_reserved_tables = 1
+=======
+>>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
             else:
                 max_reserved_tables = 0
         max_reserved_tables = max(0, max_reserved_tables)

@@ -223,3 +223,27 @@ def vip_then_fcfs_key(
     """
     return lambda g: (-vip_rank(g), g.arrival_time, g.group_id)
 
+<<<<<<< HEAD
+=======
+
+def find_fcfs_group_round_robin(
+    queues: Sequence[Sequence[CustomerGroup]],
+    table_capacity: int,
+    start_index: int = 0,
+) -> Optional[CustomerGroup]:
+    """
+    Round-robin FCFS: scan queues starting from ``start_index``, wrapping around.
+    Within each queue, FCFS order is preserved.
+    Takes the first fitting group found from the rotated queue order.
+    """
+    num_queues = len(queues)
+    if num_queues == 0:
+        return None
+    for i in range(num_queues):
+        idx = (start_index + i) % num_queues
+        for group in queues[idx]:
+            if group.can_fit(table_capacity):
+                return group
+    return None
+
+>>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
