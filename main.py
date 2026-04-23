@@ -49,18 +49,12 @@ SCENARIO_PRESETS = [
     ("Peak-hour, high demand",        "scenarios/arrivals_peak_high.txt"),
 ]
 
-<<<<<<< HEAD
-STRATEGY_OPTIONS: List[Tuple[str, tuple]] = [
-    ("Single Queue FCFS  (all groups, one queue)",       default_single_queue_range()),
-    ("Size-Based FCFS    (1-2 / 3-4 / 5+ queues)",      default_multi_queue_ranges()),
-    ("Fine-Grained FCFS  (1 / 2 / 3-4 / 5+ queues)",   parse_queue_ranges([(1,1),(2,2),(3,4),(5,None)])),
-=======
+
 STRATEGY_OPTIONS: List[Tuple[str, tuple, bool]] = [
     ("Single Queue FCFS  (all groups, one queue)",       default_single_queue_range(),                     False),
     ("Size-Based FCFS    (1-2 / 3-4 / 5+ queues)",      default_multi_queue_ranges(),                     False),
     ("Fine-Grained FCFS  (1 / 2 / 3-4 / 5+ queues)",   parse_queue_ranges([(1,1),(2,2),(3,4),(5,None)]), False),
     ("Round-Robin FCFS   (1-2 / 3-4 / 5+ rotating)",   default_multi_queue_ranges(),                     True),
->>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
 ]
 
 DEFAULT_OPENING_TIME = 11 * 60
