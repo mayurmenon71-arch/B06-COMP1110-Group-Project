@@ -35,20 +35,6 @@ def run_seating_round(
     tables for large groups.
 
     Args:
-<<<<<<< HEAD
-        restaurant:    The restaurant whose waiting_queue and tables are used.
-        current_time:  Current simulation time (minutes).
-        queue_ranges:  Defines how groups are split into queues by size.
-                       Use default_single_queue_range() for one queue,
-                       default_multi_queue_ranges() for 1-2 / 3-4 / 5+ split,
-                       or any custom Sequence[QueueRange].
-        queues:        Optional persistent queue-state lists maintained by the
-                       simulation engine. If omitted, queues are rebuilt from
-                       restaurant.waiting_queue for backward compatibility.
-
-    Returns:
-        List of (CustomerGroup, Table) pairs seated this round.
-=======
         restaurant:         The restaurant whose waiting_queue and tables are used.
         current_time:       Current simulation time (minutes).
         queue_ranges:       Defines how groups are split into queues by size.
@@ -63,7 +49,6 @@ def run_seating_round(
 
     Returns:
         Tuple of (updated_round_robin_index, list of (CustomerGroup, Table) pairs seated).
->>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
     """
     available_tables = sorted(
         restaurant.available_tables(current_time),
@@ -71,10 +56,7 @@ def run_seating_round(
     )
     seated: List[Tuple[CustomerGroup, Table]] = []
     fairness_override_active = _fairness_override_active(restaurant, current_time)
-<<<<<<< HEAD
-=======
     rr_index = round_robin_index
->>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
 
     for table in available_tables:
         queue_state = list(queues) if queues is not None else _build_queues(
