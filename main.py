@@ -377,7 +377,6 @@ def _ensure_reservations_in_loaded_scenario(arrivals, restaurant: Restaurant) ->
 
     return len(selected)
 
-
 def select_strategy(state: dict) -> None:
     print("\nQueue strategies (select one or more, e.g. 1,2):")
     options = [name for name, _, __ in STRATEGY_OPTIONS]
