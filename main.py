@@ -413,7 +413,6 @@ def choose_scenario(state: dict) -> None:
         arrivals = parse_arrivals(filepath)
         if state.get("restaurant_template"):
             arrivals = _fit_arrivals_to_restaurant(arrivals, state["restaurant_template"])
-<<<<<<< HEAD
             added_reservations = _ensure_reservations_in_loaded_scenario(arrivals, state["restaurant_template"])
             if added_reservations:
                 print(
@@ -421,8 +420,6 @@ def choose_scenario(state: dict) -> None:
                     f"{added_reservations} reservation groups to this scenario "
                     "for reservation-mode compatibility."
                 )
-=======
->>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
             validate_arrivals(arrivals, state["restaurant_template"])
         state["arrivals"] = arrivals
         state["scenario_label"] = label
@@ -476,20 +473,12 @@ def run_sim(state: dict) -> None:
     print("\nRunning simulation...")
     results: List[Tuple[str, SimulationResult]] = []
 
-<<<<<<< HEAD
-    for strategy_name, queue_ranges in state["strategies"]:
-        # Deep copy so each strategy starts with a fresh restaurant + arrivals
-        restaurant_copy = copy.deepcopy(state["restaurant_template"])
-        arrivals_copy = copy.deepcopy(state["arrivals"])
-        result = run_simulation(restaurant_copy, arrivals_copy, queue_ranges)
-=======
     for strategy_name, queue_ranges, use_round_robin in state["strategies"]:
         # Deep copy so each strategy starts with a fresh restaurant + arrivals
         restaurant_copy = copy.deepcopy(state["restaurant_template"])
         arrivals_copy = copy.deepcopy(state["arrivals"])
         result = run_simulation(restaurant_copy, arrivals_copy, queue_ranges,
                                 use_round_robin=use_round_robin)
->>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
         results.append((strategy_name, result))
         served = len(result.completed_groups)
         avg = sum(g.waiting_time for g in result.completed_groups if g.waiting_time is not None)
