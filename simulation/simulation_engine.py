@@ -65,7 +65,6 @@ def run_simulation(
     reserved_table_ticks = 0
     total_ticks = restaurant.closing_time - restaurant.opening_time
     queues: List[List[CustomerGroup]] = [[] for _ in queue_ranges]
-
     round_robin_index: int = 0
 
     # Index arrivals by minute for O(1) lookup
