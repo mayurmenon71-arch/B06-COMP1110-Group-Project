@@ -15,10 +15,7 @@ from .queue_stratgies import (
     find_best_fit_group_from_queues,
     find_fcfs_group_for_table,
     find_fcfs_group_from_queues,
-<<<<<<< HEAD
-=======
     find_fcfs_group_round_robin,
->>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
     find_group_by_queue_order,
 )
 
@@ -28,13 +25,9 @@ def run_seating_round(
     current_time: int,
     queue_ranges: Sequence[QueueRange],
     queues: Sequence[List[CustomerGroup]] | None = None,
-<<<<<<< HEAD
-) -> List[Tuple[CustomerGroup, Table]]:
-=======
     round_robin_index: int = 0,
     use_round_robin: bool = False,
 ) -> Tuple[int, List[Tuple[CustomerGroup, Table]]]:
->>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
     """
     Attempt to seat as many waiting groups as possible at currently free tables.
 
