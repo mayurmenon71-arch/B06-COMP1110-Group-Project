@@ -499,14 +499,22 @@ def view_results(state: dict) -> None:
     if len(results) == 1:
         name, result = results[0]
         print_summary(result, name)
+        return
     else:
         compare_strategies(results, scenario_name=scenario)
 
-    print("  View detailed breakdown for one strategy? (y/n): ", end="")
-    if input().strip().lower() == "y":
-        print("\nChoose strategy:")
-        for name, result in results:
-            print_summary(result, name)
+    print("  View detailed breakdown for selected strategy/strategies? (y/n): ", end="")
+    if input().strip().lower() in {"y", "yes"}:
+        print("\nChoose strategy/strategies for detailed view (e.g. 1 or 1,3):")
+        options = [name for name, _ in results]
+        indices = _choose_from_list(
+            options,
+            "Select detailed strategy/strategies",
+            allow_multiple=True,
+        )
+        selected_results = [results[idx] for idx in indices]
+        detail_label = f"{scenario} | selected details" if scenario else "Selected details"
+        compare_strategies(selected_results, scenario_name=detail_label)
 
 
 # ── main loop ─────────────────────────────────────────────────────────────────
