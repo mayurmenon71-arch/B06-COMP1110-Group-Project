@@ -96,7 +96,6 @@ def run_simulation(
         restaurant.refresh_reservations(t)
 
         # 4. Seat as many waiting groups as possible
-        run_seating_round(restaurant, t, queue_ranges, queues=queues)
         round_robin_index, _ = run_seating_round(
             restaurant, t, queue_ranges,
             queues=queues,
