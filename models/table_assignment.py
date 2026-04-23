@@ -77,15 +77,11 @@ def run_seating_round(
             reserved_priority_selected = group is not None
 
         if group is None:
-<<<<<<< HEAD
-            group = _select_group_for_table(restaurant, eligible_queues, queue_ranges, table.capacity)
-=======
             group = _select_group_for_table(
                 restaurant, eligible_queues, queue_ranges, table.capacity,
                 round_robin_index=rr_index,
                 use_round_robin=use_round_robin,
             )
->>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
 
         if group is None:
             continue
@@ -95,16 +91,10 @@ def run_seating_round(
         if queues is not None:
             _remove_group_from_queues(queues, group)
         seated.append((group, table))
-<<<<<<< HEAD
-
-    return seated
-=======
-        # Advance round-robin index each time a group is seated
         if len(queue_ranges) > 1:
             rr_index = (rr_index + 1) % len(queue_ranges)
 
     return rr_index, seated
->>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
 
 
 def _build_queues(
@@ -134,21 +124,15 @@ def _select_group_for_table(
     queues: Sequence[Sequence[CustomerGroup]],
     queue_ranges: Sequence[QueueRange],
     table_capacity: int,
-<<<<<<< HEAD
-=======
     round_robin_index: int = 0,
     use_round_robin: bool = False,
->>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
 ) -> CustomerGroup | None:
     """
     Use strategy-specific selection logic based on queue configuration:
     - 1 queue: classic single-queue FCFS.
-<<<<<<< HEAD
     - 3 queues: size-based queue priority (queue order).
-=======
     - use_round_robin=True: rotate across queues starting from round_robin_index.
     - 3 queues: size-based queue priority (fixed queue order 0→1→2).
->>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
     - 4+ queues: best-fit across queues for finer seat matching.
     - fallback: global FCFS across queues.
     """
@@ -159,12 +143,9 @@ def _select_group_for_table(
             return find_fcfs_group_for_table(queues[0], table_capacity)
         return find_fcfs_group_for_table(restaurant.waiting_queue, table_capacity)
 
-<<<<<<< HEAD
-=======
     if use_round_robin:
         return find_fcfs_group_round_robin(queues, table_capacity, round_robin_index)
 
->>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
     if num_queues == 3:
         return find_group_by_queue_order(queues, table_capacity, queue_order=(0, 1, 2))
 
