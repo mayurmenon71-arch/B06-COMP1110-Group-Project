@@ -347,7 +347,6 @@ def _fit_arrivals_to_restaurant(arrivals, restaurant: Restaurant):
     return kept
 
 
-<<<<<<< HEAD
 def _ensure_reservations_in_loaded_scenario(arrivals, restaurant: Restaurant) -> int:
     """
     Backward-compatibility helper:
@@ -380,14 +379,6 @@ def _ensure_reservations_in_loaded_scenario(arrivals, restaurant: Restaurant) ->
 
     return len(selected)
 
-
-def select_strategy(state: dict) -> None:
-    print("\nQueue strategies (select one or more, e.g. 1,2):")
-    options = [name for name, _ in STRATEGY_OPTIONS]
-    indices = _choose_from_list(options, "Select strategy/strategies", allow_multiple=True)
-    state["strategies"] = [(STRATEGY_OPTIONS[i][0].split("(")[0].strip(),
-                            STRATEGY_OPTIONS[i][1]) for i in indices]
-=======
 def select_strategy(state: dict) -> None:
     print("\nQueue strategies (select one or more, e.g. 1,2):")
     options = [name for name, _, __ in STRATEGY_OPTIONS]
@@ -395,7 +386,6 @@ def select_strategy(state: dict) -> None:
     state["strategies"] = [(STRATEGY_OPTIONS[i][0].split("(")[0].strip(),
                             STRATEGY_OPTIONS[i][1],
                             STRATEGY_OPTIONS[i][2]) for i in indices]
->>>>>>> 3b56da46aab2a7c4b0f1d9ea53c401d035d65df4
     state["strategy_label"] = " + ".join(s[0] for s in state["strategies"])
     print(f"  Selected: {state['strategy_label']}")
 
