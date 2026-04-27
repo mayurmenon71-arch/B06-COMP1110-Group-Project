@@ -78,6 +78,5 @@ General menu flow:
 - The current restaurant config parser does not store reservation settings in config files, so reservation enable/disable and reservation table proportion must still be entered interactively.
 - `temp_scenario.txt` is not used so these files remain stable for report reproduction.
 
-## Report-Ready Summary Paragraph
-
+## Summary
 To evaluate seating strategies systematically, we created paired scenario sets where each pair varies only one factor while keeping other settings constant. The varied factors include demand level, reservation customer share, group-size distribution, restaurant layout, service speed, and peak duration. This controlled design allows fair comparison of strategy performance across different restaurant settings.
