@@ -490,7 +490,7 @@ The weighted trade-off score is a decision-support measure, not an absolute best
 - The weighted trade-off score depends on the chosen metric weights. A restaurant with different priorities may choose a different strategy.
 - The simulator provides decision support rather than a universal best strategy.
 
-## Report-ready summary
+## Summary
 
 We used paired scenarios to evaluate seating strategies in a controlled way. Each pair changes one main factor while keeping the other conditions as constant as possible, such as restaurant layout, arrival pattern, service speed, reservation settings, or group-size distribution. This makes the comparison more meaningful because differences in waiting time, abandonment, utilization, and throughput can be linked to a specific scenario change.
 
