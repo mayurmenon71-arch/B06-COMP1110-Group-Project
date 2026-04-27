@@ -1,0 +1,6 @@
+# Pair 4 mixed layout
+Mixed Layout Restaurant
+660 1320
+2 4
+4 5
+6 2

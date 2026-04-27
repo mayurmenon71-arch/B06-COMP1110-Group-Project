@@ -1,0 +1,5 @@
+# Pair 4 mostly-four-seat layout
+Mostly Four-Seat Layout Restaurant
+660 1320
+4 7
+6 2
