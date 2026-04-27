@@ -9,7 +9,7 @@ from typing import Callable, List, Sequence, Tuple
 from .customer_group import CustomerGroup
 from .restaurant import Restaurant
 from .table import Table
-from .queue_stratgies import (
+from .queue_strategies import (
     QueueRange,
     assign_queue_index,
     find_best_fit_group_from_queues,

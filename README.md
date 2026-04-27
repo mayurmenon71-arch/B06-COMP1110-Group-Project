@@ -9,7 +9,7 @@ The University of Hong Kong, Semester 2, 2025–2026
 
 ## Overview
 
-This project simulates how a restaurant manages queues and seats customer groups under different queue strategies. It compares strategies such as a single queue versus size-based queues, and measures performance using metrics like average waiting time and table utilization.
+This project simulates how a restaurant manages queues and seats customer groups under different queue management strategies. It supports four strategies — Single Queue FCFS, Size-Based FCFS, Fine-Grained FCFS, and Round-Robin FCFS — and measures performance using metrics like average waiting time, abandonment rate, table utilization, and service level.
 
 ---
 
@@ -29,7 +29,7 @@ Run from the project root directory.
 
 ```
 1. Load restaurant configuration   — choose a preset, create one interactively, or load from file
-2. Select queue strategy           — single queue, size-based, or fine-grained
+2. Select queue strategy           — single queue, size-based, fine-grained, or round-robin
 3. Choose arrival scenario         — preset scenario or generate/load your own
 4. Run simulation                  — runs all selected strategies
 5. View results                    — side-by-side comparison table
@@ -128,8 +128,9 @@ The generated file is saved as `scenarios/temp_scenario.txt` and overwritten eac
 | Strategy | Description |
 |----------|-------------|
 | Single Queue FCFS | All groups share one queue. When a table frees, the earliest-arriving group that fits is seated. |
-| Size-Based FCFS | Groups are split into three queues: 1-2, 3-4, and 5+ people. FCFS within each. |
-| Fine-Grained FCFS | Four queues: 1, 2, 3-4, and 5+. More precise size matching. |
+| Size-Based FCFS | Groups split into three queues: 1-2, 3-4, and 5+ people. FCFS within each. |
+| Fine-Grained FCFS | Four queues: 1, 2, 3-4, and 5+. More precise size matching, reduces wasted seat capacity. |
+| Round-Robin FCFS | Three queues (1-2, 3-4, 5+) served in rotation. Balances queue lengths and prevents any single queue from becoming a bottleneck. |
 
 ---
 
@@ -139,7 +140,7 @@ The generated file is saved as `scenarios/temp_scenario.txt` and overwritten eac
 |--------|-------------|
 | Groups arrived | Total customer groups that showed up |
 | Groups served | Groups successfully seated and finished dining |
-| Groups left (dropout) | Groups that left after waiting more than 30 minutes |
+| Groups left (dropout) | Groups that abandoned the queue before being seated, based on a probabilistic waiting-time-dependent model |
 | Avg / Max waiting time | Time from arrival to being seated |
 | Max queue length | Peak number of groups waiting simultaneously |
 | Table utilization | % of time tables were occupied during operating hours |
@@ -187,7 +188,7 @@ Reserved groups use the same curve multiplied by `0.65`, making them less likely
 │   ├── customer_group.py      CustomerGroup dataclass
 │   ├── table.py               Table dataclass
 │   ├── restaurant.py          Restaurant dataclass
-│   ├── queue_stratgies.py     Queue range definitions and FCFS selection logic
+│   ├── queue_strategies.py    Queue range definitions and FCFS selection logic
 │   └── table_assignment.py    Seating algorithm (best-fit + cross-queue FCFS)
 ├── simulation/
 │   └── simulation_engine.py   Minute-by-minute simulation loop

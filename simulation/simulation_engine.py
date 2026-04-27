@@ -19,7 +19,7 @@ from typing import List, Sequence
 from models.customer_group import CustomerGroup
 from models.restaurant import Restaurant
 from models.table_assignment import run_seating_round
-from models.queue_stratgies import QueueRange, assign_queue_index
+from models.queue_strategies import QueueRange, assign_queue_index
 from simulation.abandonment import (
     AbandonmentConfig,
     SupportsRandom,

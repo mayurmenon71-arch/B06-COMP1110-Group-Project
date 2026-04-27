@@ -11,7 +11,7 @@ from typing import List, Optional, Tuple
 
 from models.restaurant import Restaurant
 from models.table import Table
-from models.queue_stratgies import (
+from models.queue_strategies import (
     QueueRange,
     default_single_queue_range,
     default_multi_queue_ranges,
