@@ -212,7 +212,7 @@ Reserved groups use the same curve multiplied by `0.65`, making them less likely
 │   ├── tc6_empty_scenario/
 │   ├── tc7_reservation_expiry/
 │   └── tc8_custom_config/
-├── test_cases.txt             Report-format write-up of all 8 test cases
+├── test_cases.txt             8 test cases
 └── README.md
 ```
 
