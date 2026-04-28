@@ -202,6 +202,17 @@ Reserved groups use the same curve multiplied by `0.65`, making them less likely
 │   └── arrivals_*.txt         Pre-generated scenario files
 ├── config/
 │   └── restaurant_*.txt       Restaurant layout configuration files
+├── testcases/
+│   ├── run_tests.py           Automated test runner (python testcases/run_tests.py)
+│   ├── tc1_valid_config/      Input + expected output for each test case
+│   ├── tc2_invalid_config/
+│   ├── tc3_malformed_arrivals/
+│   ├── tc4_out_of_hours/
+│   ├── tc5_oversized_group/
+│   ├── tc6_empty_scenario/
+│   ├── tc7_reservation_expiry/
+│   └── tc8_custom_config/
+├── test_cases.txt             Report-format write-up of all 8 test cases
 └── README.md
 ```
 
