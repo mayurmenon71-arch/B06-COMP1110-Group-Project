@@ -1,0 +1,10 @@
+Simulating interactive custom config entry:
+  Restaurant name : D&B Bistro #1
+  Opening time    : 09:30  →  570 minutes
+  Closing time    : 23:00  →  1380 minutes
+  Table type 1    : capacity 2, count 3
+  Table type 2    : capacity 5, count 2
+
+Restaurant created : 'D&B Bistro #1'
+Tables             : 5 total
+Validation         : PASS — special characters accepted, config is valid

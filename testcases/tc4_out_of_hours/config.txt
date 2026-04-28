@@ -1,0 +1,5 @@
+# Small cafe: opens 11:00 (660), closes 22:00 (1320)
+Small Cafe
+660 1320
+2 6
+4 2

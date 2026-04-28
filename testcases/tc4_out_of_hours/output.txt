@@ -1,0 +1,9 @@
+Restaurant hours  : 11:00 – 22:00
+Groups loaded     : 3
+  Group 1 (size 2) arrives 10:00  [OUT OF HOURS]
+  Group 2 (size 3) arrives 11:30  [VALID]
+  Group 3 (size 1) arrives 22:30  [OUT OF HOURS]
+
+Groups removed    : 2
+Groups kept       : 1
+Validation        : PASS — out-of-hours groups correctly filtered

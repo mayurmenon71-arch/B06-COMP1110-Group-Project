@@ -1,0 +1,2 @@
+# Empty scenario - no arrivals
+# group_id size arrival_time dining_duration

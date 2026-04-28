@@ -1,0 +1,11 @@
+Arrivals loaded   : 0
+Scenario is empty — running simulation with zero arrivals ...
+
+Groups arrived    : 0
+Groups served     : 0
+Groups abandoned  : 0
+Abandonment rate  : 0.0%
+Table utilisation : 0.0%
+Service level     : 0.0%
+
+Validation        : PASS — empty scenario handled, all metrics return 0

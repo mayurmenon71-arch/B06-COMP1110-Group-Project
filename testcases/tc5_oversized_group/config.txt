@@ -1,0 +1,5 @@
+# Small cafe: largest table seats 4
+Small Cafe
+660 1320
+2 6
+4 2

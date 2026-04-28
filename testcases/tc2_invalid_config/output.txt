@@ -1,0 +1,4 @@
+Parsed config     : Bad Config, opening=1320, closing=660
+Running validate_restaurant() ...
+ValueError caught : Closing time must be later than opening time.
+Validation        : PASS — invalid config correctly rejected

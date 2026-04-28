@@ -1,0 +1,4 @@
+# Invalid: closing time is before opening time
+Bad Config
+1320 660
+2 4

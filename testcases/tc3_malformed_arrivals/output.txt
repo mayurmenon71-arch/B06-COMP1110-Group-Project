@@ -1,0 +1,12 @@
+Attempting to parse malformed arrivals file ...
+
+  Testing line: '1 3 25:99 45'
+  Error: invalid time value 25:99 (hour=25, minute=99)
+
+  Testing line: '2 -1 12:00 30'
+  Error: group size must be positive, got -1
+
+  Testing line: '3 2 12:05'
+  Error: expected 4 or 9 columns, got 3
+
+Validation        : PASS — all malformed lines detected

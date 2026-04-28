@@ -1,0 +1,6 @@
+Arrivals loaded   : 13
+Reserved groups   : 1
+  Group 13 — reservation expires at 18:05
+
+Reservation timeouts : 1
+Validation           : PASS — reservation expiry correctly detected

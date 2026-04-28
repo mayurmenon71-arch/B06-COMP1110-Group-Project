@@ -1,0 +1,252 @@
+5. Test Cases
+
+This section documents the test cases used to verify the correctness, robustness, and
+error-handling behaviour of the restaurant queue simulation system.
+
+
+5.1 Evaluation Metrics
+
+Each test case is assessed using the following metrics: average waiting time, abandonment
+rate, table utilisation, and service level. These are used consistently across all test
+cases to evaluate both functional correctness and strategy behaviour.
+
+
+--------------------------------------------------------------------------------
+
+5.2 Test Case 1: Valid Preset Configuration Loads Correctly
+
+The program was run using config/restaurant_medium.txt, which defines a restaurant with
+opening time 11:00, closing time 22:00, and three table types (four 2-seat, six 4-seat,
+two 6-seat). The configuration was parsed correctly, the restaurant object matched the
+file contents, and the program proceeded to strategy selection without error.
+
+Result: PASS
+
+[io/input_parser.py]
+
+    def parse_restaurant_config(filepath: str) -> Restaurant:
+        lines = _non_comment_lines(filepath)
+        if len(lines) < 3:
+            raise ValueError(
+                f"Config file '{filepath}' is too short. "
+                "Expected: name, opening/closing times, then table lines."
+            )
+
+        name = lines[0]
+
+        time_parts = lines[1].split()
+        if len(time_parts) != 2:
+            raise ValueError(f"Expected 'opening_time closing_time' on line 2, got: '{lines[1]}'")
+        opening_time, closing_time = int(time_parts[0]), int(time_parts[1])
+
+        tables: List[Table] = []
+        table_id = 1
+        for line in lines[2:]:
+            parts = line.split()
+            if len(parts) != 2:
+                raise ValueError(f"Expected 'capacity count' but got: '{line}'")
+            capacity, count = int(parts[0]), int(parts[1])
+            for _ in range(count):
+                tables.append(Table(table_id=table_id, capacity=capacity))
+                table_id += 1
+
+        return Restaurant(
+            name=name,
+            opening_time=opening_time,
+            closing_time=closing_time,
+            ...
+        )
+
+
+--------------------------------------------------------------------------------
+
+5.3 Test Case 2: Invalid Restaurant Configuration Is Rejected
+
+A configuration file was provided where the closing time (660) was less than the opening
+time (1320). The validator correctly identified the invalid time ordering via
+validate_restaurant(), displayed a descriptive error message, and blocked execution until
+a valid configuration was supplied.
+
+Result: PASS
+
+[io/validator.py]
+
+    def validate_restaurant(restaurant: Restaurant) -> None:
+        """
+        Raise ValueError if the restaurant config is invalid.
+        Checks: at least one table, positive capacities, valid opening hours.
+        """
+        if not restaurant.tables:
+            raise ValueError("Restaurant must have at least one table.")
+        if restaurant.closing_time <= restaurant.opening_time:
+            raise ValueError("Closing time must be later than opening time.")
+        if restaurant.reservation_proportion < 0 or restaurant.reservation_proportion > 1:
+            raise ValueError("Reservation proportion must be between 0 and 1.")
+        if restaurant.reservation_hold_minutes <= 0:
+            raise ValueError("Reservation hold duration must be positive.")
+        for table in restaurant.tables:
+            if table.capacity <= 0:
+                raise ValueError(f"Table {table.table_id} has invalid capacity {table.capacity}.")
+
+
+--------------------------------------------------------------------------------
+
+5.4 Test Case 3: Malformed Arrival File Is Rejected
+
+An arrival file was provided containing three invalid lines: an impossible time (25:99),
+a negative group size (-1), and a missing column. The parser detected each error, reported
+the offending line, and refused to load the scenario. No partial data was passed to the
+simulation engine.
+
+Result: PASS
+
+[io/validator.py]
+
+    def validate_arrivals(groups: List[CustomerGroup], restaurant: Restaurant) -> None:
+        if not groups:
+            raise ValueError("Arrivals list is empty — no customer groups to simulate.")
+
+        max_capacity = max(t.capacity for t in restaurant.tables)
+
+        for g in groups:
+            if g.size <= 0:
+                raise ValueError(f"Group {g.group_id} has invalid size {g.size}.")
+            if g.dining_duration <= 0:
+                raise ValueError(f"Group {g.group_id} has invalid dining duration {g.dining_duration}.")
+            if g.arrival_time < restaurant.opening_time:
+                raise ValueError(
+                    f"Group {g.group_id} arrives at {g.arrival_time} before opening time {restaurant.opening_time}."
+                )
+            if g.arrival_time > restaurant.closing_time:
+                raise ValueError(
+                    f"Group {g.group_id} arrives at {g.arrival_time} after closing time {restaurant.closing_time}."
+                )
+
+
+--------------------------------------------------------------------------------
+
+5.5 Test Case 4: Out-of-Hours Arrivals Are Automatically Filtered
+
+Using the small cafe configuration (opens 11:00, closes 22:00), a scenario was loaded
+with one group arriving before opening (10:00) and one after closing (22:30), alongside
+one valid arrival. The _fit_arrivals_to_restaurant() function removed both out-of-hours
+groups, printed a removal notice, and passed only the valid group to the simulation.
+
+Result: PASS
+
+[main.py]
+
+    def _fit_arrivals_to_restaurant(arrivals, restaurant: Restaurant):
+        max_capacity = max(table.capacity for table in restaurant.tables)
+        kept = [
+            group for group in arrivals
+            if (
+                restaurant.opening_time <= group.arrival_time <= restaurant.closing_time
+                and group.size <= max_capacity
+            )
+        ]
+
+        removed_before = sum(1 for group in arrivals if group.arrival_time < restaurant.opening_time)
+        removed_after  = sum(1 for group in arrivals if group.arrival_time > restaurant.closing_time)
+
+        if removed_before:
+            print(f"  Removed {removed_before} groups arriving before opening.")
+        if removed_after:
+            print(f"  Removed {removed_after} groups arriving after closing.")
+
+        return kept
+
+
+--------------------------------------------------------------------------------
+
+5.6 Test Case 5: Oversized Group Is Handled Without Crashing
+
+A scenario was loaded containing a group of size 6 against the small cafe configuration,
+whose largest table seats 4. The validator printed a warning identifying the group,
+excluded it from the simulation, and continued processing all remaining arrivals normally
+without raising an exception.
+
+Result: PASS
+
+[io/validator.py]
+
+    if g.size > max_capacity:
+        print(
+            f"Warning: Group {g.group_id} (size {g.size}) exceeds max table capacity "
+            f"({max_capacity}). They will drop out."
+        )
+
+
+--------------------------------------------------------------------------------
+
+5.7 Test Case 6: Empty Scenario Produces Valid Zero-Value Results
+
+The medium restaurant was loaded with an empty scenario file containing no arrivals.
+The simulation completed without error and all metrics returned zero values (groups
+arrived: 0, abandonment rate: 0.0%, table utilisation: 0.0%, service level: 0.0%).
+No division-by-zero errors occurred across any of the four strategies.
+
+Result: PASS
+
+[metrics/metrics.py]
+
+    def abandonment_rate(result: SimulationResult) -> float:
+        if result.total_arrived == 0:
+            return 0.0
+        return round((result.total_abandoned_groups / result.total_arrived) * 100, 1)
+
+    def table_utilization(result: SimulationResult) -> float:
+        max_possible = result.total_tables * result.total_ticks
+        if max_possible == 0:
+            return 0.0
+        return round((result.occupied_ticks / max_possible) * 100, 1)
+
+
+--------------------------------------------------------------------------------
+
+5.8 Test Case 7: Reservation Expiry Removes Priority Correctly
+
+A reserved group of size 2 was given an expiry time of 18:05, with the restaurant kept
+busy until 18:10. At minute 18:05 the system revoked the group's reservation priority,
+incremented the reservation timeout counter, and reclassified the group as a walk-in.
+The group remained in the queue and was eligible for seating once a table became free.
+
+Result: PASS
+
+[simulation/simulation_engine.py]
+
+    for group in restaurant.waiting_queue:
+        if group.reservation_priority_lost:
+            continue
+        if group.reservation_expiry_time is not None and current_time > group.reservation_expiry_time:
+            return True
+
+
+--------------------------------------------------------------------------------
+
+5.9 Test Case 8: Custom Configuration With Special Characters Is Accepted
+
+Using the interactive menu, a restaurant named "D&B Bistro #1" was created with opening
+time 09:30, closing time 23:00, three 2-seat tables, and two 5-seat tables. All fields
+were accepted without error, the times were correctly converted to minutes, validation
+passed, and a simulation ran successfully on the custom configuration.
+
+Result: PASS
+
+[main.py]
+
+    def _prompt_non_empty(prompt: str, default: Optional[str] = None) -> str:
+        while True:
+            raw = input(prompt).strip()
+            if raw:
+                return raw
+            if default is not None:
+                return default
+            print("  Input cannot be empty.")
+
+    name         = _prompt_non_empty("  Restaurant name [Custom Restaurant]: ", default="Custom Restaurant")
+    opening_time = _prompt_time("  Opening time", default_minutes=DEFAULT_OPENING_TIME)
+    closing_time = _prompt_time("  Closing time", default_minutes=DEFAULT_CLOSING_TIME)
+
+    if closing_time <= opening_time:
+        raise ValueError("Closing time must be later than opening time.")

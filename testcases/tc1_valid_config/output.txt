@@ -1,0 +1,8 @@
+Restaurant name   : Medium Restaurant
+Opening time      : 660 min  (11:00)
+Closing time      : 1320 min  (22:00)
+Number of tables  : 12
+  4x 2-seat tables
+  6x 4-seat tables
+  2x 6-seat tables
+Validation        : PASS — no errors raised

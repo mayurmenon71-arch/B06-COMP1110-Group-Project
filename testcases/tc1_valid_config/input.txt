@@ -1,0 +1,6 @@
+# Valid medium restaurant configuration
+Medium Restaurant
+660 1320
+2 4
+4 6
+6 2

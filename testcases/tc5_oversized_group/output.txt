@@ -1,0 +1,10 @@
+Largest table     : 4 seats
+Groups loaded     : 3
+  Group 1 (size 6)  [OVERSIZED — will be excluded]
+  Group 2 (size 2)  [fits]
+  Group 3 (size 3)  [fits]
+
+Warning: Group 1 (size 6) exceeds max table capacity (4). They will drop out.
+
+Groups after filter: 2
+Validation        : PASS — oversized group warned and excluded

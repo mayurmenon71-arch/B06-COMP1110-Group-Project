@@ -1,0 +1,4 @@
+# group_id size arrival_time dining_duration
+1 2 10:00 30
+2 3 11:30 45
+3 1 22:30 20
